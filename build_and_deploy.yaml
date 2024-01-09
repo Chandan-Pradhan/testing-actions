@@ -1,0 +1,50 @@
+name: sc-01-PS-java-webappp-build-and-deploy
+on: 
+    push: 
+      branches: 
+        - feature/parassankhyadhar
+    pull_request: 
+        types: [opened, closed]
+        branches: 
+          - feature/parassankyadhar
+    workflow_dispatch: 
+jobs:
+    build:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Cloning the repo
+              uses: actions/checkout@v3
+            - name: java env setup
+              uses: actions/setup-java@v3
+              with:
+                distribution: adopt
+                java-version: '17'
+            - name: code build
+              run: |
+                cd java-webapp
+                mvn clean install
+            - run: |
+                echo ${{ github.workspace }} #Path: /home/runner/work/build-deploy-sample/build-deploy-sample
+                ls
+                cd java-webapp/target
+                echo "Inside target"
+                ls
+            - name: upload war file 
+              uses: actions/upload-artifact@v4
+              with:
+                  name: java-app-war-file
+                  path: '${{ github.workspace }}/java-webapp/target/*.jar'
+    deploy:
+      needs: build
+      runs-on: ubuntu-latest
+      steps:
+        - name: Download Artifact from Workflow
+          uses: actions/download-artifact@v4
+          with:
+             name: java-app-war-file
+        - name: Deploy to Azure Web App
+          uses: azure/webapps-deploy@v2
+          with:
+            app-name: 'ga-wa-sc-01'
+            publish-profile: ${{ secrets.AZ_WEB_APP_PUBLISH_PROFILE_PS}}
+            package: '*.jar'
